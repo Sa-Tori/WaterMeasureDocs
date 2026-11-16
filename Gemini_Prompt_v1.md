@@ -1,25 +1,27 @@
-# Gemini Prompt v1 — Sprint 1: Математическое ядро Water Measure
+# Gemini Prompt v1 — Sprint 1: Каркас + игровой экран
 
 ## Контекст проекта
 
-Android-игра **Water Measure** — головоломка с переливанием воды между сосудами.
-Sprint 1 — **только математическое ядро, без UI**. Всё проверяется через JUnit 5.
+Android-игра **Water Measure** — головоломка с переливанием воды между сосудами.  
+**Sprint 1** — создание работающего экрана игры с отрисовкой сосудов, тапами, переливом и проверкой победы.
 
-- **Stack:** Java 17, Android Studio, Gradle (Kotlin DSL), JUnit 5, Gson
-- **Package root:** `com.watermeasure.game`
-- **Архитектура:** слои `model`, `logic`, `repository`. Без MVVM/Activity/Compose в этом спринте.
+**Stack:** Java 17, Android Studio, Gradle (Kotlin DSL).  
+**Package root:** `com.watermeasure.game`  
+**Архитектура:** пока без MVVM, без Room, без DataStore. Только `model` + `view` (Activity + Custom View).  
+**UI:** рисование кодом на `Canvas` (без XML-разметки для сосудов).  
+**Источник данных:** хардкод 3 уровней в коде (позже заменим на JSON).
 
 ## Как выдавать результат
 
-1. **Один файл за раз.** После каждого файла — 1–2 предложения пояснения. Жди от пользователя "дальше" перед следующим.
-2. Полный код — без `// TODO`, без `...`, без плейсхолдеров. Должно компилироваться сразу.
-3. Пути к файлам указывай явно.
-4. Комментарии в коде — на **English** (стандарт для Java).
-5. Package declarations — точные, как указано ниже.
+- Один файл за раз. После каждого файла — 1–2 предложения пояснения.
+- Жди от пользователя "дальше" перед следующим файлом.
+- Полный код — без `// TODO`, без `...`, без плейсхолдеров. Должно компилироваться сразу.
+- Пути к файлам указывай явно.
+- Комментарии в коде — на English (стандарт для Java).
 
 ## Список файлов (по порядку)
 
-### Файл 1: `app/src/main/java/com/watermeasure/game/model/Vessel.java`
+### Файл 1: `model/Vessel.java`
 
 ```java
 package com.watermeasure.game.model;
@@ -28,7 +30,9 @@ public class Vessel {
     private final int index;
     private final int capacity;
     private int currentVolume;
+    private final int initialVolume;
     private final boolean isSource;
+
     // constructor + getters + setCurrentVolume с валидацией
 }
 ```
@@ -38,28 +42,35 @@ public class Vessel {
 - `0 <= currentVolume <= capacity`
 - `isSource` — просто флаг. Источник не имеет специальной логики в модели.
 - Validation: throw `IllegalArgumentException` при нарушении инвариантов.
-- `getIndex()`, `getCapacity()`, `getCurrentVolume()`, `isSource()`, `setCurrentVolume(int)`.
+- `getIndex()`, `getCapacity()`, `getCurrentVolume()`, `getInitialVolume()`, `isSource()`, `setCurrentVolume(int)`.
 
-### Файл 2: `.../model/Level.java`
+### Файл 2: `model/Level.java`
 
 ```java
 package com.watermeasure.game.model;
+
+import java.util.List;
 
 public class Level {
     private final int id;
     private final List<Vessel> vessels;
     private final int targetVolume;
+
     // constructor + getters
 }
 ```
 
-### Файл 3: `.../logic/TransferWater.java`
+### Файл 3: `logic/TransferWater.java`
 
 ```java
 package com.watermeasure.game.logic;
 
+import com.watermeasure.game.model.Vessel;
+
 public class TransferWater {
-    public static boolean transfer(Vessel src, Vessel dst) { ... }
+    public static boolean transfer(Vessel src, Vessel dst) {
+        // algorithm
+    }
 }
 ```
 
@@ -73,10 +84,13 @@ public class TransferWater {
 7. `return true;`
 - **No special handling for `isSource`.**
 
-### Файл 4: `.../logic/CheckWin.java`
+### Файл 4: `logic/CheckWin.java`
 
 ```java
 package com.watermeasure.game.logic;
+
+import com.watermeasure.game.model.Level;
+import com.watermeasure.game.model.Vessel;
 
 public class CheckWin {
     public static boolean check(Level level) {
@@ -85,107 +99,75 @@ public class CheckWin {
 }
 ```
 
-### Файл 5: `app/src/main/res/raw/levels.json`
-
-JSON schema:
-```json
-{
-  "levels": [
-    {
-      "id": 1,
-      "vessels": [
-        {"capacity": 3, "initialVolume": 0, "isSource": false},
-        {"capacity": 5, "initialVolume": 0, "isSource": false},
-        {"capacity": 8, "initialVolume": 8, "isSource": false}
-      ],
-      "targetVolume": 4,
-      "solutionSteps": [[0,0,8],[0,5,3],[3,2,3]]
-    }
-  ]
-}
-```
-
-Для источника (`isSource: true`): `capacity` = `v1 + v2 + targetVolume + 1`. `initialVolume` = `capacity`.
-
-**Готовые 20 уровней — вставить в `levels.json`:**
-
-```json
-{
-  "levels": [
-    {"id":1,"vessels":[{"capacity":3,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":8,"initialVolume":8,"isSource":false}],"targetVolume":4},
-    {"id":2,"vessels":[{"capacity":3,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":10,"initialVolume":10,"isSource":true}],"targetVolume":1},
-    {"id":3,"vessels":[{"capacity":7,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":19,"initialVolume":19,"isSource":true}],"targetVolume":6},
-    {"id":4,"vessels":[{"capacity":2,"initialVolume":0,"isSource":false},{"capacity":3,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":5,"isSource":false}],"targetVolume":1},
-    {"id":5,"vessels":[{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":7,"initialVolume":0,"isSource":false},{"capacity":8,"initialVolume":8,"isSource":false}],"targetVolume":6},
-    {"id":6,"vessels":[{"capacity":3,"initialVolume":0,"isSource":false},{"capacity":4,"initialVolume":0,"isSource":false},{"capacity":10,"initialVolume":10,"isSource":true}],"targetVolume":2},
-    {"id":7,"vessels":[{"capacity":3,"initialVolume":0,"isSource":false},{"capacity":4,"initialVolume":0,"isSource":false},{"capacity":7,"initialVolume":7,"isSource":false}],"targetVolume":2},
-    {"id":8,"vessels":[{"capacity":3,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":8,"initialVolume":8,"isSource":false}],"targetVolume":1},
-    {"id":9,"vessels":[{"capacity":2,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":9,"initialVolume":9,"isSource":true}],"targetVolume":1},
-    {"id":10,"vessels":[{"capacity":2,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":12,"initialVolume":12,"isSource":true}],"targetVolume":4},
-    {"id":11,"vessels":[{"capacity":4,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":13,"initialVolume":13,"isSource":true}],"targetVolume":3},
-    {"id":12,"vessels":[{"capacity":1,"initialVolume":0,"isSource":false},{"capacity":7,"initialVolume":0,"isSource":false},{"capacity":8,"initialVolume":8,"isSource":false}],"targetVolume":5},
-    {"id":13,"vessels":[{"capacity":3,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":13,"initialVolume":13,"isSource":true}],"targetVolume":4},
-    {"id":14,"vessels":[{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":8,"initialVolume":0,"isSource":false},{"capacity":20,"initialVolume":20,"isSource":true}],"targetVolume":6},
-    {"id":15,"vessels":[{"capacity":4,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":12,"initialVolume":12,"isSource":true}],"targetVolume":2},
-    {"id":16,"vessels":[{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":8,"initialVolume":0,"isSource":false},{"capacity":21,"initialVolume":21,"isSource":true}],"targetVolume":7},
-    {"id":17,"vessels":[{"capacity":4,"initialVolume":0,"isSource":false},{"capacity":7,"initialVolume":0,"isSource":false},{"capacity":14,"initialVolume":14,"isSource":true}],"targetVolume":2},
-    {"id":18,"vessels":[{"capacity":3,"initialVolume":0,"isSource":false},{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":14,"initialVolume":14,"isSource":true}],"targetVolume":5},
-    {"id":19,"vessels":[{"capacity":5,"initialVolume":0,"isSource":false},{"capacity":6,"initialVolume":0,"isSource":false},{"capacity":15,"initialVolume":15,"isSource":true}],"targetVolume":3},
-    {"id":20,"vessels":[{"capacity":6,"initialVolume":0,"isSource":false},{"capacity":7,"initialVolume":0,"isSource":false},{"capacity":18,"initialVolume":18,"isSource":true}],"targetVolume":4}
-  ]
-}
-```
-
-### Файл 6: `.../repository/LevelRepository.java`
+### Файл 5: `view/GameView.java` (Custom View)
 
 ```java
-package com.watermeasure.game.repository;
+package com.watermeasure.game.view;
 
-public class LevelRepository {
-    public List<Level> loadLevels(Context context) throws IOException { ... }
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.view.MotionEvent;
+import android.view.View;
+
+import com.watermeasure.game.model.Level;
+import com.watermeasure.game.model.Vessel;
+import com.watermeasure.game.logic.TransferWater;
+import com.watermeasure.game.logic.CheckWin;
+
+public class GameView extends View {
+    // fields: Level level, Vessel selectedVessel, Paint paints, coordinates
+    // constructor: set up paints, load level (хардкод 3 уровней)
+    // onDraw: draw 3 vessels (rectangles), water inside, highlight selected
+    // onTouchEvent: handle taps (select/deselect/transfer)
 }
 ```
 
 **Requirements:**
-- Читает `R.raw.levels` через `context.getResources().openRawResource(R.raw.levels)`
-- Парсит через Gson
-- Возвращает `List<Level>`
-- Внутренний `LevelJson` DTO для парсинга
+- Рисует 3 сосуда в ряд (или треугольником — на твоё усмотрение, но равномерно по ширине экрана).
+- Каждый сосуд — прямоугольник с закруглёнными углами (или обычный).
+- Внутри — голубой прямоугольник, высота = `(currentVolume / capacity) * vesselHeight`.
+- Выбранный сосуд — обводка красным/жёлтым цветом (2–3 dp).
+- Обработка `onTouchEvent`:
+  - Определить, по какому сосуду тапнули (по координатам).
+  - Если нет выбранного → выбрать (если сосуд не пустой).
+  - Если есть выбранный → попытаться перелить (`TransferWater.transfer`).
+  - После перелива — снять выделение, вызвать `invalidate()`.
+  - После перелива проверить `CheckWin.check(level)`. Если победа — показать попап (через слушатель или прямо в `GameView` создать `AlertDialog`).
 
-### Файл 7: `app/src/test/java/com/watermeasure/game/WaterMeasureTest.java`
+### Файл 6: `GameActivity.java`
 
-10 JUnit 5 тестов (все зелёные):
-1. `transfer_ShouldPourPartially_WhenSourceHasLessThanSpace`
-2. `transfer_ShouldFillCompletely_WhenSourceHasMore`
-3. `transfer_ShouldReturnFalse_WhenDestinationFull`
-4. `transfer_ShouldReturnFalse_WhenSourceEmpty`
-5. `transfer_ShouldReturnFalse_WhenSameVessel`
-6. `transfer_FromSource_WorksAsNormalVessel`
-7. `transfer_ToSource_WorksAsNormalVessel`
-8. `checkWin_ShouldReturnTrue_WhenTargetReached`
-9. `checkWin_ShouldReturnFalse_WhenTargetNotReached`
-10. `checkWin_ShouldIgnoreSourceVessel`
+```java
+package com.watermeasure.game;
 
-### Файл 8 (S1-06, опционально): `.../LevelSolvabilityTest.java`
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
-BFS по всем 20 уровням. Состояние = массив `currentVolume` всех сосудов (включая `isSource`). Действия: `X→Y` для всех пар. Цель — `CheckWin.check(state)`.
+import com.watermeasure.game.view.GameView;
+
+public class GameActivity extends Activity {
+    // setContentView: FrameLayout с TextView (номер уровня) + GameView
+}
+```
 
 **Requirements:**
-- `@ParameterizedTest` по уровням из `levels.json`
-- BFS с `Set<String>` visited
-- `@Test` для каждого уровня — `assertTrue(solvable(level))`
-- Limit: 100k states на уровень
+- Создать `FrameLayout` программно (без XML).
+- Добавить `TextView` сверху с текстом «Уровень: 1» (или номер текущего уровня).
+- Добавить `GameView` на весь экран (под TextView).
+- В `onCreate` инициализировать `GameView` с уровнем 1 (или массивом из 3 уровней).
 
-## Что НЕ нужно в Sprint 1
+### Файл 7: `AndroidManifest.xml` (фрагмент)
 
-- ❌ Activity, Fragment, Compose, XML layouts
-- ❌ Room, DataStore, Navigation Component
-- ❌ Анимации, звуки, Canvas, тап-обработчики
-- ❌ MVVM-ViewModel
-- ❌ Жизни, Undo, Локализация (это Sprint 2+)
+Убедись, что `GameActivity` объявлена как launcher activity.
 
-## Definition of Done для этого промпта
+---
 
-- [ ] Все 8 файлов созданы в правильных путях
-- [ ] `./gradlew test` проходит (10 + 20 тестов зелёные)
-- [ ] Все 20 уровней решаемы по BFS
+## Дополнительно
+
+- Не создавай `ViewModel`, `Room`, `DataStore`, `SharedPreferences` в этом спринте.
+- Не используй Compose. Только классические `View` и `Canvas`.
+- Не добавляй анимации (это Спринт 3). Только мгновенная перерисовка после перелива.
+- Если нужно — создай простой массив из 3 уровней прямо в `GameView` или `GameActivity` (хардкод).
